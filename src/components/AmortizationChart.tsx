@@ -1,44 +1,31 @@
 import {
   Area,
-  AreaChart,
   CartesianGrid,
+  Line,
+  ComposedChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
-import type { LoanResult } from '../engine/types';
+import type { ComparisonResult } from '../engine/types';
 import { type LocaleConfig, formatCurrency } from '../engine/locale';
 
 interface AmortizationChartProps {
-  result: LoanResult;
+  comparison: ComparisonResult;
   locale: LocaleConfig;
 }
 
 /**
- * Stacked area chart: cumulative principal at the bottom, cumulative
- * interest on top, with the outstanding balance overlaid as a line.
- *
- * This is the signature visual of the app. It does one thing well:
- * makes the relationship between what-you-owe and what-you-pay legible
- * at a glance — and shows users *why* extra payments matter (later, in
- * Phase 2, when we add overpayments).
+ * The signature visual. Stacked area shows cumulative principal vs
+ * interest under the modified scenario; when modifications are active,
+ * the baseline outstanding balance is overlaid as a dashed line so the
+ * user can see what the un-modified loan would have looked like.
  */
-export function AmortizationChart({ result, locale }: AmortizationChartProps) {
-  // Sample the schedule down to ~120 points max so very long mortgages
-  // still render smoothly and the chart line stays clean.
-  const step = Math.max(1, Math.floor(result.schedule.length / 120));
-  const data = result.schedule
-    .filter((_, i) => i % step === 0 || i === result.schedule.length - 1)
-    .map((row) => ({
-      month: row.month,
-      year: +(row.month / 12).toFixed(2),
-      principal: row.cumulativePrincipal,
-      interest: row.cumulativeInterest,
-      balance: row.balance,
-    }));
+export function AmortizationChart({ comparison, locale }: AmortizationChartProps) {
+  const { modified, baseline, hasModifications } = comparison;
 
-  if (data.length === 0 || result.totalMonths === 0) {
+  if (modified.schedule.length === 0) {
     return (
       <div className="border hairline rounded-lg p-8 text-center text-ink-muted text-sm">
         Set a loan term to see the amortization breakdown.
@@ -46,23 +33,74 @@ export function AmortizationChart({ result, locale }: AmortizationChartProps) {
     );
   }
 
+  // Build a unified time series by month. Both schedules report a `month`
+  // field per period; we sample down to ~120 points across the longer
+  // of the two schedules for smooth rendering.
+  const maxMonths = Math.max(baseline.actualMonths, modified.actualMonths);
+  const step = Math.max(1, Math.floor(maxMonths / 120));
+
+  // Index both schedules by month for quick lookup
+  const baselineByMonth = new Map<number, { balance: number }>();
+  for (const row of baseline.schedule) {
+    baselineByMonth.set(row.month, { balance: row.balance });
+  }
+  const modifiedByMonth = new Map<number, { balance: number; principal: number; interest: number }>();
+  for (const row of modified.schedule) {
+    modifiedByMonth.set(row.month, {
+      balance: row.balance,
+      principal: row.cumulativePrincipal,
+      interest: row.cumulativeInterest,
+    });
+  }
+
+  // Generate data points at every `step` months
+  const data: Array<{
+    month: number;
+    year: number;
+    principal: number;
+    interest: number;
+    baselineBalance: number | null;
+  }> = [];
+  let lastMod = { principal: 0, interest: 0 };
+  let lastBaseline: number | null = baseline.principal;
+  for (let m = 0; m <= maxMonths; m += step) {
+    const mod = modifiedByMonth.get(m);
+    if (mod) lastMod = { principal: mod.principal, interest: mod.interest };
+    const bl = baselineByMonth.get(m);
+    if (bl) lastBaseline = bl.balance;
+    data.push({
+      month: m,
+      year: +(m / 12).toFixed(2),
+      principal: lastMod.principal,
+      interest: lastMod.interest,
+      baselineBalance: lastBaseline,
+    });
+  }
+
+  // Ensure final point closes the series cleanly
+  data.push({
+    month: maxMonths,
+    year: +(maxMonths / 12).toFixed(2),
+    principal: modified.principal,
+    interest: modified.totalInterest,
+    baselineBalance: 0,
+  });
+
   return (
     <div className="border hairline rounded-lg p-4 sm:p-6 bg-paper">
-      <div className="flex items-baseline justify-between mb-4">
+      <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
         <div>
-          <div className="text-xs uppercase tracking-[0.16em] text-ink-muted">
-            Amortization
-          </div>
+          <div className="text-xs uppercase tracking-[0.16em] text-ink-muted">Amortization</div>
           <div className="font-serif text-xl text-ink mt-0.5">
             Where your money goes, month by month
           </div>
         </div>
-        <Legend />
+        <Legend showBaseline={hasModifications} />
       </div>
 
       <div className="h-72 sm:h-80 -ml-2">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="principalFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#1E3A8A" stopOpacity={0.85} />
@@ -77,7 +115,7 @@ export function AmortizationChart({ result, locale }: AmortizationChartProps) {
             <XAxis
               dataKey="year"
               type="number"
-              domain={[0, +(result.totalMonths / 12).toFixed(2)]}
+              domain={[0, +(maxMonths / 12).toFixed(2)]}
               tickFormatter={(v) => `${Math.round(v)}y`}
               stroke="#9CA0A8"
               fontSize={11}
@@ -90,7 +128,7 @@ export function AmortizationChart({ result, locale }: AmortizationChartProps) {
               tick={{ fill: '#6B7079' }}
               width={70}
             />
-            <Tooltip content={<CustomTooltip locale={locale} />} />
+            <Tooltip content={<CustomTooltip locale={locale} showBaseline={hasModifications} />} />
             <Area
               type="monotone"
               dataKey="principal"
@@ -109,33 +147,56 @@ export function AmortizationChart({ result, locale }: AmortizationChartProps) {
               fill="url(#interestFill)"
               name="Interest paid"
             />
-          </AreaChart>
+            {hasModifications && (
+              <Line
+                type="monotone"
+                dataKey="baselineBalance"
+                stroke="#6B7079"
+                strokeWidth={1.25}
+                strokeDasharray="4 3"
+                dot={false}
+                name="Baseline balance"
+              />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
   );
 }
 
-function Legend() {
+function Legend({ showBaseline }: { showBaseline: boolean }) {
   return (
-    <div className="flex items-center gap-4 text-xs text-ink-soft">
+    <div className="flex items-center gap-4 text-xs text-ink-soft flex-wrap">
       <span className="flex items-center gap-1.5">
         <span className="w-3 h-3 rounded-sm bg-principal" /> Principal
       </span>
       <span className="flex items-center gap-1.5">
         <span className="w-3 h-3 rounded-sm bg-interest" /> Interest
       </span>
+      {showBaseline && (
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 border-t border-dashed border-ink-muted" />
+          Baseline balance
+        </span>
+      )}
     </div>
   );
 }
 
 interface TooltipProps {
   active?: boolean;
-  payload?: Array<{ value: number; name: string; dataKey: string; payload: { year: number; month: number } }>;
+  payload?: Array<{
+    value: number;
+    name: string;
+    dataKey: string;
+    payload: { month: number; baselineBalance: number | null };
+  }>;
   locale: LocaleConfig;
+  showBaseline: boolean;
 }
 
-function CustomTooltip({ active, payload, locale }: TooltipProps) {
+function CustomTooltip({ active, payload, locale, showBaseline }: TooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
   const principal = payload.find((p) => p.dataKey === 'principal')?.value ?? 0;
@@ -155,6 +216,13 @@ function CustomTooltip({ active, payload, locale }: TooltipProps) {
         <span className="text-ink-soft mr-auto">Interest</span>
         <span className="text-ink">{formatCurrency(interest, locale)}</span>
       </div>
+      {showBaseline && point.baselineBalance !== null && (
+        <div className="flex items-center gap-3 num font-mono mt-1 pt-1 border-t hairline">
+          <span className="w-2 h-0.5 border-t border-dashed border-ink-muted" />
+          <span className="text-ink-soft mr-auto">Baseline balance</span>
+          <span className="text-ink">{formatCurrency(point.baselineBalance, locale)}</span>
+        </div>
+      )}
     </div>
   );
 }

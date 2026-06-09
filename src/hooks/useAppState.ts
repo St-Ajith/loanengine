@@ -2,25 +2,27 @@
 //
 // The hook reads initial state from `location.search` on mount, then
 // pushes every subsequent state change back to the URL via
-// history.replaceState — replace, not push, so a 30-second tuning
-// session doesn't litter the browser's back stack with 200 entries.
+// history.replaceState — replace, not push, so a tuning session doesn't
+// litter the back stack with hundreds of entries.
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type AppState, decodeState, encodeState } from '../engine/url-state';
-import { LOCALES } from '../engine/locale';
+import { LOCALES, defaultsFor } from '../engine/locale';
 
 const DEFAULT_STATE: AppState = (() => {
   const locale = LOCALES.US;
-  const d = locale.defaults.home;
+  const d = defaultsFor(locale, 'home', 'new');
   return {
     locale: locale.id,
     assetType: 'home',
     condition: 'new',
     assetValue: d.value,
-    downPayment: d.value * (d.downPct / 100),
+    downPayment: d.downPayment,
     termYears: d.termYears,
     termMonths: 0,
-    apr: d.apr,
+    rateProfile: { kind: 'flat', apr: d.apr },
+    frequency: 'monthly',
+    overpayments: [],
   };
 })();
 
@@ -43,9 +45,9 @@ export function useAppState(): [AppState, (updates: Partial<AppState>) => void] 
     window.history.replaceState(null, '', newUrl);
   }, [state]);
 
-  const update = (updates: Partial<AppState>) => {
+  const update = useCallback((updates: Partial<AppState>) => {
     setState((prev) => ({ ...prev, ...updates }));
-  };
+  }, []);
 
   return [state, update];
 }

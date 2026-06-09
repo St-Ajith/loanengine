@@ -11,35 +11,40 @@ interface YearRow {
   year: number;
   principal: number;
   interest: number;
+  overpayment: number;
   endingBalance: number;
-  months: ScheduleRow[];
+  periods: ScheduleRow[];
 }
 
 /**
- * Yearly rollup of the amortization schedule with a click-to-expand
- * detail view for the months inside each year. We don't render 360 rows
- * by default — that's noise. The expanded year view is for users who
- * actually want to inspect what's happening at a specific point.
+ * Yearly rollup of the amortization schedule with click-to-expand month
+ * detail. When overpayments are active, an extra column shows the
+ * overpayment portion separately from the scheduled principal.
  *
- * Phase 3 will add a full CSV export (FR-4.2.B) for users who want the
- * raw matrix in their own tools.
+ * Phase 3 will add a CSV export (FR-4.2.B) for raw data access.
  */
 export function ScheduleTable({ result, locale }: ScheduleTableProps) {
   const [expanded, setExpanded] = useState<number | null>(null);
 
+  const hasOverpayments = useMemo(
+    () => result.schedule.some((r) => r.overpayment > 0),
+    [result.schedule],
+  );
+
   const yearly = useMemo<YearRow[]>(() => {
     const buckets = new Map<number, YearRow>();
     for (const row of result.schedule) {
-      const year = Math.ceil(row.month / 12);
+      const year = Math.max(1, Math.ceil(row.month / 12));
       let bucket = buckets.get(year);
       if (!bucket) {
-        bucket = { year, principal: 0, interest: 0, endingBalance: 0, months: [] };
+        bucket = { year, principal: 0, interest: 0, overpayment: 0, endingBalance: 0, periods: [] };
         buckets.set(year, bucket);
       }
       bucket.principal += row.principalPaid;
       bucket.interest += row.interestPaid;
+      bucket.overpayment += row.overpayment;
       bucket.endingBalance = row.balance;
-      bucket.months.push(row);
+      bucket.periods.push(row);
     }
     return Array.from(buckets.values());
   }, [result.schedule]);
@@ -62,6 +67,9 @@ export function ScheduleTable({ result, locale }: ScheduleTableProps) {
               <th className="text-left font-medium px-4 sm:px-6 py-2.5 w-16">Yr</th>
               <th className="text-right font-medium px-3 py-2.5">Principal</th>
               <th className="text-right font-medium px-3 py-2.5">Interest</th>
+              {hasOverpayments && (
+                <th className="text-right font-medium px-3 py-2.5">Extra</th>
+              )}
               <th className="text-right font-medium px-4 sm:px-6 py-2.5">Balance</th>
             </tr>
           </thead>
@@ -73,6 +81,7 @@ export function ScheduleTable({ result, locale }: ScheduleTableProps) {
                 locale={locale}
                 isOpen={expanded === y.year}
                 onToggle={() => setExpanded(expanded === y.year ? null : y.year)}
+                showOverpayment={hasOverpayments}
               />
             ))}
           </tbody>
@@ -87,11 +96,13 @@ function YearRowView({
   locale,
   isOpen,
   onToggle,
+  showOverpayment,
 }: {
   row: YearRow;
   locale: LocaleConfig;
   isOpen: boolean;
   onToggle: () => void;
+  showOverpayment: boolean;
 }) {
   return (
     <>
@@ -100,9 +111,7 @@ function YearRowView({
         onClick={onToggle}
       >
         <td className="px-4 sm:px-6 py-2.5 font-mono num text-ink">
-          <span className="inline-block w-3 text-ink-faint mr-1">
-            {isOpen ? '−' : '+'}
-          </span>
+          <span className="inline-block w-3 text-ink-faint mr-1">{isOpen ? '−' : '+'}</span>
           {row.year}
         </td>
         <td className="text-right px-3 py-2.5 font-mono num text-principal">
@@ -111,22 +120,32 @@ function YearRowView({
         <td className="text-right px-3 py-2.5 font-mono num text-interest">
           {formatCurrency(row.interest, locale)}
         </td>
+        {showOverpayment && (
+          <td className="text-right px-3 py-2.5 font-mono num text-savings">
+            {row.overpayment > 0 ? formatCurrency(row.overpayment, locale) : '—'}
+          </td>
+        )}
         <td className="text-right px-4 sm:px-6 py-2.5 font-mono num text-ink">
           {formatCurrency(row.endingBalance, locale)}
         </td>
       </tr>
       {isOpen &&
-        row.months.map((m) => (
-          <tr key={m.month} className="bg-paper-dim/30 text-xs text-ink-soft">
-            <td className="px-4 sm:px-6 py-1.5 font-mono num pl-10">M{m.month}</td>
+        row.periods.map((p) => (
+          <tr key={p.period} className="bg-paper-dim/30 text-xs text-ink-soft">
+            <td className="px-4 sm:px-6 py-1.5 font-mono num pl-10">M{p.month}</td>
             <td className="text-right px-3 py-1.5 font-mono num">
-              {formatCurrency(m.principalPaid, locale)}
+              {formatCurrency(p.principalPaid, locale)}
             </td>
             <td className="text-right px-3 py-1.5 font-mono num">
-              {formatCurrency(m.interestPaid, locale)}
+              {formatCurrency(p.interestPaid, locale)}
             </td>
+            {showOverpayment && (
+              <td className="text-right px-3 py-1.5 font-mono num">
+                {p.overpayment > 0 ? formatCurrency(p.overpayment, locale) : '—'}
+              </td>
+            )}
             <td className="text-right px-4 sm:px-6 py-1.5 font-mono num">
-              {formatCurrency(m.balance, locale)}
+              {formatCurrency(p.balance, locale)}
             </td>
           </tr>
         ))}

@@ -1,25 +1,31 @@
-// Locale presets. Each locale carries currency formatting metadata and
-// default input ranges that match the region's typical loan profile.
+// Locale presets with mid-2026 reference rates per region.
 //
-// Geo-IP auto-detection (FR-1.1) is deferred to Phase 3 — for now the
-// header selector (FR-1.2) is the only entry point, and 'US' is the
-// default until a user picks something else.
+// Rates sourced from public benchmarks (Freddie Mac PMMS, Bank of England,
+// SSB Norway, ECB MIR, RBI / SBI, June 2026). They're defaults to seed the
+// inputs with realistic figures — actual user rates depend on credit, LTV,
+// and lender, so the slider always lets users dial in their own.
+
+import type { AssetType, AssetCondition } from './types';
 
 export type LocaleId = 'US' | 'EU' | 'UK' | 'IN' | 'NO';
+
+export interface AssetDefaults {
+  value: number;
+  downPct: number;
+  aprNew: number;
+  aprUsed: number;
+  termYears: number;
+}
 
 export interface LocaleConfig {
   id: LocaleId;
   label: string;
   currency: string;
-  /** Intl locale string used for number/currency formatting. */
   intlLocale: string;
-  /** Sensible defaults so the calculator lands on a meaningful starting state. */
   defaults: {
-    home: { value: number; downPct: number; apr: number; termYears: number };
-    car: { value: number; downPct: number; apr: number; termYears: number };
+    home: AssetDefaults;
+    car: AssetDefaults;
   };
-  /** Slider caps. Beyond these, users can still type a value — these just
-   *  bound the slider for ergonomic dragging. */
   caps: {
     home: { maxValue: number; maxApr: number; maxTermYears: number };
     car: { maxValue: number; maxApr: number; maxTermYears: number };
@@ -33,8 +39,8 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'USD',
     intlLocale: 'en-US',
     defaults: {
-      home: { value: 450_000, downPct: 20, apr: 6.8, termYears: 30 },
-      car: { value: 38_000, downPct: 15, apr: 7.5, termYears: 5 },
+      home: { value: 450_000, downPct: 20, aprNew: 6.5, aprUsed: 6.7, termYears: 30 },
+      car: { value: 38_000, downPct: 15, aprNew: 6.8, aprUsed: 8.5, termYears: 5 },
     },
     caps: {
       home: { maxValue: 2_500_000, maxApr: 15, maxTermYears: 40 },
@@ -47,8 +53,8 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'EUR',
     intlLocale: 'de-DE',
     defaults: {
-      home: { value: 380_000, downPct: 20, apr: 4.2, termYears: 25 },
-      car: { value: 32_000, downPct: 20, apr: 6.0, termYears: 5 },
+      home: { value: 380_000, downPct: 20, aprNew: 3.7, aprUsed: 3.8, termYears: 25 },
+      car: { value: 32_000, downPct: 20, aprNew: 5.5, aprUsed: 7.0, termYears: 5 },
     },
     caps: {
       home: { maxValue: 2_000_000, maxApr: 12, maxTermYears: 35 },
@@ -61,8 +67,8 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'GBP',
     intlLocale: 'en-GB',
     defaults: {
-      home: { value: 320_000, downPct: 15, apr: 5.2, termYears: 25 },
-      car: { value: 25_000, downPct: 15, apr: 7.9, termYears: 5 },
+      home: { value: 320_000, downPct: 15, aprNew: 5.6, aprUsed: 5.7, termYears: 25 },
+      car: { value: 25_000, downPct: 15, aprNew: 7.5, aprUsed: 9.0, termYears: 5 },
     },
     caps: {
       home: { maxValue: 2_000_000, maxApr: 14, maxTermYears: 35 },
@@ -75,8 +81,8 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'INR',
     intlLocale: 'en-IN',
     defaults: {
-      home: { value: 8_500_000, downPct: 20, apr: 8.5, termYears: 20 },
-      car: { value: 1_200_000, downPct: 20, apr: 9.5, termYears: 5 },
+      home: { value: 8_500_000, downPct: 20, aprNew: 8.4, aprUsed: 8.6, termYears: 20 },
+      car: { value: 1_200_000, downPct: 20, aprNew: 9.2, aprUsed: 11.5, termYears: 5 },
     },
     caps: {
       home: { maxValue: 100_000_000, maxApr: 18, maxTermYears: 30 },
@@ -89,8 +95,8 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'NOK',
     intlLocale: 'nb-NO',
     defaults: {
-      home: { value: 5_200_000, downPct: 15, apr: 5.9, termYears: 25 },
-      car: { value: 480_000, downPct: 20, apr: 7.2, termYears: 5 },
+      home: { value: 5_200_000, downPct: 15, aprNew: 5.3, aprUsed: 5.4, termYears: 25 },
+      car: { value: 480_000, downPct: 20, aprNew: 6.5, aprUsed: 8.0, termYears: 5 },
     },
     caps: {
       home: { maxValue: 30_000_000, maxApr: 14, maxTermYears: 35 },
@@ -98,6 +104,25 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     },
   },
 };
+
+/**
+ * Convenience accessor — defaults for a (locale, asset, condition) triple.
+ * Used when the user switches asset type or condition so the figures
+ * stay sensible instead of carrying a million-kroner balance over to a car.
+ */
+export function defaultsFor(
+  locale: LocaleConfig,
+  assetType: AssetType,
+  condition: AssetCondition,
+): { value: number; downPayment: number; apr: number; termYears: number } {
+  const d = locale.defaults[assetType];
+  return {
+    value: d.value,
+    downPayment: Math.round(d.value * (d.downPct / 100)),
+    apr: condition === 'new' ? d.aprNew : d.aprUsed,
+    termYears: d.termYears,
+  };
+}
 
 export function formatCurrency(value: number, locale: LocaleConfig, fractionDigits = 0): string {
   return new Intl.NumberFormat(locale.intlLocale, {

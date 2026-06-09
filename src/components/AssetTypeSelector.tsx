@@ -3,7 +3,8 @@ import type { AssetType, AssetCondition } from '../engine/types';
 interface AssetTypeSelectorProps {
   assetType: AssetType;
   condition: AssetCondition;
-  onChange: (next: { assetType?: AssetType; condition?: AssetCondition }) => void;
+  onAssetTypeChange: (next: AssetType) => void;
+  onConditionChange: (next: AssetCondition) => void;
 }
 
 const ASSET_OPTIONS: { value: AssetType; label: string; sublabel: string }[] = [
@@ -16,7 +17,12 @@ const CONDITION_OPTIONS: { value: AssetCondition; label: string }[] = [
   { value: 'used', label: 'Used' },
 ];
 
-export function AssetTypeSelector({ assetType, condition, onChange }: AssetTypeSelectorProps) {
+export function AssetTypeSelector({
+  assetType,
+  condition,
+  onAssetTypeChange,
+  onConditionChange,
+}: AssetTypeSelectorProps) {
   return (
     <div className="space-y-4">
       <div>
@@ -30,7 +36,7 @@ export function AssetTypeSelector({ assetType, condition, onChange }: AssetTypeS
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                onClick={() => onChange({ assetType: opt.value })}
+                onClick={() => onAssetTypeChange(opt.value)}
                 className={`text-left px-3 py-2.5 rounded border transition-colors ${
                   selected
                     ? 'bg-ink text-paper border-ink'
@@ -38,11 +44,7 @@ export function AssetTypeSelector({ assetType, condition, onChange }: AssetTypeS
                 }`}
               >
                 <div className="text-sm font-medium">{opt.label}</div>
-                <div
-                  className={`text-xs mt-0.5 ${
-                    selected ? 'text-paper/70' : 'text-ink-faint'
-                  }`}
-                >
+                <div className={`text-xs mt-0.5 ${selected ? 'text-paper/70' : 'text-ink-faint'}`}>
                   {opt.sublabel}
                 </div>
               </button>
@@ -62,7 +64,7 @@ export function AssetTypeSelector({ assetType, condition, onChange }: AssetTypeS
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                onClick={() => onChange({ condition: opt.value })}
+                onClick={() => onConditionChange(opt.value)}
                 className={`flex-1 px-3 py-1.5 rounded border text-sm transition-colors ${
                   selected
                     ? 'bg-ink text-paper border-ink'

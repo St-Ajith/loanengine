@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { DualInput } from './DualInput';
 import { AssetTypeSelector } from './AssetTypeSelector';
 import type { AppState } from '../engine/url-state';
-import { type LocaleConfig, formatNumber } from '../engine/locale';
+import type { AssetCondition, AssetType, RateProfile } from '../engine/types';
+import { type LocaleConfig, formatNumber, defaultsFor } from '../engine/locale';
 
 interface InputPanelProps {
   state: AppState;
@@ -12,8 +13,12 @@ interface InputPanelProps {
 
 /**
  * Primary input surface. Houses the asset fork (FR-1.3), the four core
- * input tokens (FR-2.1), and the down-payment $/% toggle that lets users
- * express the same value in whichever unit feels native.
+ * input tokens (FR-2.1), and the rate profile (flat or tiered promo).
+ *
+ * Switching asset type resets value / down / APR / term to that asset's
+ * locale-aware defaults — a Home's millions don't carry over to a Car.
+ * Switching condition only adjusts APR (the asset is the same; only
+ * the financing rate differs between new and used).
  */
 export function InputPanel({ state, onChange, locale }: InputPanelProps) {
   const [downMode, setDownMode] = useState<'amount' | 'percent'>('percent');
@@ -21,9 +26,34 @@ export function InputPanel({ state, onChange, locale }: InputPanelProps) {
   const caps = locale.caps[state.assetType];
   const downPct = state.assetValue > 0 ? (state.downPayment / state.assetValue) * 100 : 0;
 
+  const handleAssetTypeChange = (nextType: AssetType) => {
+    if (nextType === state.assetType) return;
+    const d = defaultsFor(locale, nextType, state.condition);
+    onChange({
+      assetType: nextType,
+      assetValue: d.value,
+      downPayment: d.downPayment,
+      termYears: d.termYears,
+      termMonths: 0,
+      rateProfile: { kind: 'flat', apr: d.apr },
+    });
+  };
+
+  const handleConditionChange = (nextCondition: AssetCondition) => {
+    if (nextCondition === state.condition) return;
+    const d = defaultsFor(locale, state.assetType, nextCondition);
+    // Only adjust the APR — keep the user's value/down/term as-is, since
+    // a specific car or home doesn't change price when its condition
+    // label flips. Preserve a promo if one is active, just update the
+    // standard rate.
+    const nextRate: RateProfile =
+      state.rateProfile.kind === 'flat'
+        ? { kind: 'flat', apr: d.apr }
+        : { ...state.rateProfile, postApr: d.apr };
+    onChange({ condition: nextCondition, rateProfile: nextRate });
+  };
+
   const handleAssetValueChange = (v: number) => {
-    // Preserve the down-payment percentage when the user adjusts asset value
-    // — that's almost always what they mean when nudging the headline price.
     const pct = state.assetValue > 0 ? state.downPayment / state.assetValue : 0;
     onChange({ assetValue: v, downPayment: Math.round(v * pct) });
   };
@@ -44,7 +74,8 @@ export function InputPanel({ state, onChange, locale }: InputPanelProps) {
       <AssetTypeSelector
         assetType={state.assetType}
         condition={state.condition}
-        onChange={onChange}
+        onAssetTypeChange={handleAssetTypeChange}
+        onConditionChange={handleConditionChange}
       />
 
       <div className="border-t hairline pt-6 space-y-5">
@@ -129,15 +160,11 @@ export function InputPanel({ state, onChange, locale }: InputPanelProps) {
           </div>
         </div>
 
-        <DualInput
-          label="Interest rate (APR)"
-          value={state.apr}
-          onChange={(v) => onChange({ apr: v })}
-          min={0}
-          max={caps.maxApr}
-          step={0.05}
-          format={(n) => n.toFixed(2)}
-          suffix="%"
+        <RateProfileEditor
+          rateProfile={state.rateProfile}
+          maxApr={caps.maxApr}
+          onChange={(rp) => onChange({ rateProfile: rp })}
+          assetType={state.assetType}
         />
       </div>
     </div>
@@ -145,9 +172,103 @@ export function InputPanel({ state, onChange, locale }: InputPanelProps) {
 }
 
 /**
- * Compact stepper used for the years/months pair. A full DualInput
- * would be overkill for a small integer range.
+ * Rate profile editor. Defaults to a flat APR; users can toggle a
+ * promo period (common in car finance — Norwegian dealers often run
+ * 0% or 2.99% intro deals for 1–3 years). The toggle is visible for
+ * both asset types but the copy emphasizes the car use case.
  */
+function RateProfileEditor({
+  rateProfile,
+  maxApr,
+  onChange,
+  assetType,
+}: {
+  rateProfile: RateProfile;
+  maxApr: number;
+  onChange: (rp: RateProfile) => void;
+  assetType: 'home' | 'car';
+}) {
+  const isTiered = rateProfile.kind === 'tiered';
+  const standardApr = isTiered ? rateProfile.postApr : rateProfile.apr;
+
+  const togglePromo = () => {
+    if (isTiered) {
+      onChange({ kind: 'flat', apr: rateProfile.postApr });
+    } else {
+      // Sensible promo defaults: 0% for 36 months (matches Norwegian car
+      // dealer offers); user can dial them in from there.
+      onChange({
+        kind: 'tiered',
+        promoApr: 0,
+        promoMonths: 36,
+        postApr: rateProfile.apr,
+      });
+    }
+  };
+
+  const setStandardApr = (v: number) => {
+    if (isTiered) onChange({ ...rateProfile, postApr: v });
+    else onChange({ kind: 'flat', apr: v });
+  };
+
+  return (
+    <div>
+      <DualInput
+        label={isTiered ? 'Standard rate (after promo)' : 'Interest rate (APR)'}
+        value={standardApr}
+        onChange={setStandardApr}
+        min={0}
+        max={maxApr}
+        step={0.05}
+        format={(n) => n.toFixed(2)}
+        suffix="%"
+      />
+
+      <button
+        type="button"
+        onClick={togglePromo}
+        className={`mt-3 text-xs uppercase tracking-[0.14em] transition-colors ${
+          isTiered
+            ? 'text-ink-muted hover:text-ink'
+            : 'text-ink-faint hover:text-ink-soft'
+        }`}
+      >
+        {isTiered ? '− Remove promo period' : '+ Add promo period'}
+        {!isTiered && assetType === 'car' && (
+          <span className="ml-1.5 normal-case tracking-normal text-ink-faint">
+            (e.g. 0% for 36 months)
+          </span>
+        )}
+      </button>
+
+      {isTiered && (
+        <div className="mt-4 pl-3 border-l-2 border-l-paper-line space-y-4">
+          <DualInput
+            label="Promo rate"
+            value={rateProfile.promoApr}
+            onChange={(v) => onChange({ ...rateProfile, promoApr: v })}
+            min={0}
+            max={maxApr}
+            step={0.05}
+            format={(n) => n.toFixed(2)}
+            suffix="%"
+          />
+          <DualInput
+            label="Promo duration"
+            value={rateProfile.promoMonths}
+            onChange={(v) => onChange({ ...rateProfile, promoMonths: Math.max(1, Math.floor(v)) })}
+            min={1}
+            max={120}
+            step={1}
+            format={(n) => String(Math.floor(n))}
+            suffix="months"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TermStepper({
   label,
   value,
