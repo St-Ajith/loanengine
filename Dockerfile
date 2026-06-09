@@ -7,8 +7,10 @@ ENV NPM_CONFIG_FUND=false
 WORKDIR /app
 
 # Install dependencies separately so this layer caches across rebuilds.
+# Use npm ci when a lockfile is present (fast, strict, reproducible);
+# fall back to npm install when it's missing so first-time clones still build.
 COPY package*.json ./
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Bring in the source and produce dist/
 COPY . ./
