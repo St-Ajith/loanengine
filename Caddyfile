@@ -1,0 +1,34 @@
+# Global options
+{
+	admin off                # no admin API needed inside Railway
+	persist_config off       # Railway storage isn't persistent
+	auto_https off           # Railway terminates HTTPS upstream
+
+	log {
+		format json
+	}
+
+	servers {
+		trusted_proxies static private_ranges 100.0.0.0/8
+	}
+}
+
+# Site block — Railway injects $PORT at runtime, falls back to 3000 locally
+:{$PORT:3000} {
+	log {
+		format json
+	}
+
+	# Health-check passthrough
+	rewrite /health /*
+
+	# Serve the Vite build output
+	root * dist
+	encode gzip
+	file_server
+
+	# SPA fallback: any unknown path returns index.html so client-side
+	# URL state (everything in the query string for this app) still works
+	# even on cold loads from a shared link.
+	try_files {path} /index.html
+}
