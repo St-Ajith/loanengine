@@ -1,6 +1,6 @@
 import type { ComparisonResult } from '../engine/types';
 import { type LocaleConfig, formatCurrency } from '../engine/locale';
-import { formatTerm, frequencyLabel } from '../engine/amortization';
+import { formatTerm } from '../engine/amortization';
 
 interface SummaryMetricsProps {
   comparison: ComparisonResult;
@@ -8,21 +8,26 @@ interface SummaryMetricsProps {
 }
 
 /**
- * Hero summary. The periodic payment lives at display-typography size
- * because it is the first thing every user wants to know. When the user
- * has activated any modifications (frequency, overpayments, promo rate),
- * a savings ribbon appears below to highlight the delta.
+ * Hero metrics for the loan. Designed to live in the top half of the
+ * unified impact card — the extra-payments editor sits directly below
+ * it in App.tsx, sharing the same border so the cause→effect link is
+ * unmistakable.
+ *
+ * When modifications are active, each supporting metric shows an inline
+ * "saves X" indicator instead of a separate banner. Same delta info,
+ * but it's attached to the number it modifies.
  */
 export function SummaryMetrics({ comparison, locale }: SummaryMetricsProps) {
-  const { modified, hasModifications, interestSaved, monthsSaved } = comparison;
+  const { modified, baseline, hasModifications, interestSaved, monthsSaved, totalPaidSaved } =
+    comparison;
   const payoffDate = computePayoffDate(modified.actualMonths);
-  const hasPromo = modified.paymentInitial !== modified.paymentPostPromo;
+  const hasPromo = Math.abs(modified.paymentInitial - modified.paymentPostPromo) > 0.5;
 
   return (
-    <div className="bg-paper-dim/50 border hairline rounded-lg p-6 sm:p-8">
+    <div className="p-6 sm:p-8">
       <div className="text-xs uppercase tracking-[0.18em] text-ink-muted mb-2">
-        {frequencyLabel(modified.frequency)} payment
-        {hasPromo && <span className="ml-1 normal-case tracking-normal">— promo period</span>}
+        Monthly payment
+        {hasPromo && <span className="ml-1 normal-case tracking-normal">— during promo</span>}
       </div>
       <div className="font-serif text-5xl sm:text-6xl text-ink num leading-none">
         {formatCurrency(modified.paymentInitial, locale, 0)}
@@ -37,7 +42,7 @@ export function SummaryMetrics({ comparison, locale }: SummaryMetricsProps) {
           <span className="text-ink font-medium">
             {formatCurrency(modified.paymentPostPromo, locale)}
           </span>{' '}
-          after the promo
+          for the remaining term
         </div>
       )}
 
@@ -46,61 +51,43 @@ export function SummaryMetrics({ comparison, locale }: SummaryMetricsProps) {
           label="Total interest"
           value={formatCurrency(modified.totalInterest, locale)}
           tone="interest"
+          delta={
+            hasModifications && interestSaved > 0.5
+              ? {
+                  text: `saves ${formatCurrency(interestSaved, locale)}`,
+                  was: formatCurrency(baseline.totalInterest, locale),
+                }
+              : null
+          }
         />
         <Stat
           label="Total paid"
           value={formatCurrency(modified.totalPaid, locale)}
           tone="ink"
+          delta={
+            hasModifications && totalPaidSaved > 0.5
+              ? {
+                  text: `saves ${formatCurrency(totalPaidSaved, locale)}`,
+                  was: formatCurrency(baseline.totalPaid, locale),
+                }
+              : null
+          }
         />
         <Stat
           label="Paid off"
           value={payoffDate}
           tone="ink"
           sublabel={formatTerm(modified.actualMonths)}
+          delta={
+            hasModifications && monthsSaved > 0
+              ? {
+                  text: `${formatTerm(monthsSaved)} earlier`,
+                  was: formatTerm(baseline.actualMonths),
+                }
+              : null
+          }
         />
       </div>
-
-      {hasModifications && (interestSaved > 0.5 || monthsSaved > 0) && (
-        <SavingsBanner
-          interestSaved={interestSaved}
-          monthsSaved={monthsSaved}
-          locale={locale}
-        />
-      )}
-    </div>
-  );
-}
-
-function SavingsBanner({
-  interestSaved,
-  monthsSaved,
-  locale,
-}: {
-  interestSaved: number;
-  monthsSaved: number;
-  locale: LocaleConfig;
-}) {
-  return (
-    <div className="mt-5 bg-savings/10 border border-savings/30 rounded p-4 flex flex-wrap items-baseline gap-x-6 gap-y-2">
-      <div className="text-xs uppercase tracking-[0.16em] text-savings font-medium">
-        Vs. baseline
-      </div>
-      {interestSaved > 0.5 && (
-        <div>
-          <span className="font-mono num text-savings text-base font-medium">
-            −{formatCurrency(interestSaved, locale)}
-          </span>
-          <span className="text-xs text-ink-soft ml-1.5">interest</span>
-        </div>
-      )}
-      {monthsSaved > 0 && (
-        <div>
-          <span className="font-mono num text-savings text-base font-medium">
-            −{formatTerm(monthsSaved)}
-          </span>
-          <span className="text-xs text-ink-soft ml-1.5">on the term</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -110,19 +97,30 @@ function Stat({
   value,
   tone,
   sublabel,
+  delta,
 }: {
   label: string;
   value: string;
-  tone: 'ink' | 'interest' | 'savings';
+  tone: 'ink' | 'interest';
   sublabel?: string;
+  delta: { text: string; was: string } | null;
 }) {
-  const toneClass =
-    tone === 'interest' ? 'text-interest' : tone === 'savings' ? 'text-savings' : 'text-ink';
+  const toneClass = tone === 'interest' ? 'text-interest' : 'text-ink';
   return (
     <div>
       <div className="text-xs uppercase tracking-[0.14em] text-ink-muted mb-1">{label}</div>
       <div className={`font-mono text-base sm:text-lg num ${toneClass}`}>{value}</div>
-      {sublabel && <div className="text-xs text-ink-faint mt-0.5 font-mono">{sublabel}</div>}
+      {sublabel && !delta && (
+        <div className="text-xs text-ink-faint mt-0.5 font-mono">{sublabel}</div>
+      )}
+      {delta && (
+        <div className="mt-1 space-y-0.5">
+          <div className="text-xs font-mono text-savings num">↓ {delta.text}</div>
+          <div className="text-[10px] font-mono text-ink-faint num line-through">
+            was {delta.was}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,11 +1,9 @@
 // URL state codec (FR-4.1).
 //
 // Every meaningful input lives in the query string so users can share a
-// scenario by copying the URL. Encoding stays flat and human-inspectable
-// — no base64, no compression — because the param list is small and the
-// readability helps debugging.
+// scenario by copying the URL. Encoding stays flat and human-inspectable.
 
-import type { Frequency, LoanInputs, Overpayment } from './types';
+import type { LoanInputs, Overpayment } from './types';
 import { LOCALES, type LocaleId } from './locale';
 
 export interface AppState extends LoanInputs {
@@ -23,11 +21,8 @@ const KEYS = {
   apr: 'r',         // flat APR or post-promo APR
   promoApr: 'pr',   // optional, when tiered
   promoMonths: 'pm', // optional, when tiered
-  frequency: 'f',
   overpayments: 'op',
 } as const;
-
-const FREQUENCIES: Frequency[] = ['monthly', 'biweekly', 'quarterly', 'semiannual', 'annual'];
 
 export function encodeState(state: AppState): string {
   const params = new URLSearchParams();
@@ -45,10 +40,6 @@ export function encodeState(state: AppState): string {
     params.set(KEYS.apr, String(round(state.rateProfile.postApr, 3)));
     params.set(KEYS.promoApr, String(round(state.rateProfile.promoApr, 3)));
     params.set(KEYS.promoMonths, String(state.rateProfile.promoMonths));
-  }
-
-  if (state.frequency !== 'monthly') {
-    params.set(KEYS.frequency, state.frequency);
   }
 
   if (state.overpayments.length > 0) {
@@ -96,11 +87,6 @@ export function decodeState(search: string): Partial<AppState> {
     }
   }
 
-  const freq = params.get(KEYS.frequency);
-  if (freq && (FREQUENCIES as string[]).includes(freq)) {
-    out.frequency = freq as Frequency;
-  }
-
   const opString = params.get(KEYS.overpayments);
   if (opString) {
     out.overpayments = decodeOverpayments(opString);
@@ -110,12 +96,10 @@ export function decodeState(search: string): Partial<AppState> {
 }
 
 /**
- * Overpayments compact encoding:
+ * Overpayment encoding (compact):
  *   recurring: "r:amount:startMonth" or "r:amount:startMonth:endMonth"
  *   lump:      "l:amount:month"
  *   multiple separated by "|"
- *
- * Example: r:500:1|l:10000:18|r:200:24:60
  */
 function encodeOverpayments(ops: Overpayment[]): string {
   return ops

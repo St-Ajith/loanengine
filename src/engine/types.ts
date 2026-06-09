@@ -1,24 +1,7 @@
-// Domain types for the loan engine. Kept dependency-free so the engine
-// module can be lifted out for tests or reuse in another runtime.
+// Domain types for the loan engine.
 
 export type AssetType = 'home' | 'car';
 export type AssetCondition = 'new' | 'used';
-
-/**
- * Payment frequency. The engine honestly re-amortizes at the selected
- * cadence — period rate = APR / paymentsPerYear, n = totalMonths × (paymentsPerYear/12).
- * Users wanting the "bi-weekly trick" savings (effectively one extra payment/year)
- * can express that as a recurring overpayment instead.
- */
-export type Frequency = 'monthly' | 'biweekly' | 'quarterly' | 'semiannual' | 'annual';
-
-export const PAYMENTS_PER_YEAR: Record<Frequency, number> = {
-  monthly: 12,
-  biweekly: 26,
-  quarterly: 4,
-  semiannual: 2,
-  annual: 1,
-};
 
 /**
  * Rate profile. A flat rate is the common case; a tiered rate models
@@ -33,16 +16,17 @@ export type RateProfile =
 /**
  * Overpayment modifiers. Recurring layers a fixed extra amount onto
  * every payment in a window; lump is a single one-off principal hit
- * applied at a specific month.
+ * applied at a specific month. Both shorten the loan term — the
+ * monthly EMI stays fixed.
  */
 export type Overpayment =
   | { kind: 'recurring'; amount: number; startMonth: number; endMonth?: number }
   | { kind: 'lump'; amount: number; month: number };
 
 export interface LoanInputs {
-  /** Gross asset purchase value (V) — sticker price of the home or car. */
+  /** Gross asset purchase value (V). */
   assetValue: number;
-  /** Capital down payment (D) — paid upfront, not borrowed. */
+  /** Capital down payment (D). */
   downPayment: number;
   /** Loan term — years component. */
   termYears: number;
@@ -50,74 +34,63 @@ export interface LoanInputs {
   termMonths: number;
   /** Rate profile — flat by default, or tiered for promo financing. */
   rateProfile: RateProfile;
-  /** Asset type (home / car) — drives sensible defaults and limits. */
+  /** Asset type — drives sensible defaults and limits. */
   assetType: AssetType;
   /** Condition — drives default APR ranges. */
   condition: AssetCondition;
-  /** Payment frequency. Defaults to monthly. */
-  frequency: Frequency;
-  /** Active overpayment scenarios. Empty array means baseline only. */
+  /** Active overpayment scenarios. Empty array = baseline. */
   overpayments: Overpayment[];
 }
 
 export interface ScheduleRow {
-  /** 1-indexed period number (NOT month — depends on frequency). */
-  period: number;
-  /** The calendar month this period falls in (rounded). For charting/labelling. */
+  /** 1-indexed month number. */
   month: number;
-  /** Cumulative principal paid through this period. */
+  /** Cumulative principal paid through this month. */
   cumulativePrincipal: number;
-  /** Cumulative interest paid through this period. */
+  /** Cumulative interest paid through this month. */
   cumulativeInterest: number;
-  /** Principal paid in this single period (from the scheduled payment). */
+  /** Principal paid from the scheduled EMI this month. */
   principalPaid: number;
-  /** Interest paid in this single period. */
+  /** Interest paid this month. */
   interestPaid: number;
-  /** Extra principal applied this period from overpayments. */
+  /** Extra principal applied this month from overpayments. */
   overpayment: number;
-  /** Outstanding balance after this period. */
+  /** Outstanding balance after this month. */
   balance: number;
-  /** The scheduled payment for this period (may change at promo boundary). */
+  /** Scheduled EMI for this month (changes at promo boundary). */
   scheduledPayment: number;
 }
 
 export interface LoanResult {
   /** Net principal financed = assetValue − downPayment. */
   principal: number;
-  /** Selected payment frequency. */
-  frequency: Frequency;
-  /** Number of scheduled periods for the term (e.g. 360 for monthly 30y). */
-  scheduledPeriods: number;
-  /** Calendar months in the original term. */
+  /** Months in the original term. */
   scheduledMonths: number;
-  /** Periods actually used — may be fewer if overpayments closed the loan early. */
-  actualPeriods: number;
-  /** Calendar months the loan actually takes given modifications. */
+  /** Months actually used — may be fewer if overpayments closed it early. */
   actualMonths: number;
-  /** Periodic payment at the start (during promo, if any). */
+  /** Monthly EMI during the promo period (or for the full term if flat). */
   paymentInitial: number;
-  /** Periodic payment after the promo period, if rate is tiered. Same as initial otherwise. */
+  /** Monthly EMI after the promo period, if rate is tiered. Same as initial otherwise. */
   paymentPostPromo: number;
-  /** Total interest paid across the entire actual schedule. */
+  /** Total interest paid across the actual schedule. */
   totalInterest: number;
-  /** Total cash out: principal + total interest + total overpayments. */
+  /** Total cash out: principal + total interest. */
   totalPaid: number;
   /** Sum of all overpayments applied. */
   totalOverpayments: number;
-  /** Full period-by-period schedule. */
+  /** Full month-by-month schedule. */
   schedule: ScheduleRow[];
 }
 
 /**
- * Side-by-side baseline vs modified result. The UI uses the delta fields
- * to highlight savings only when modifications are actually active.
+ * Side-by-side baseline vs modified result.
  */
 export interface ComparisonResult {
   baseline: LoanResult;
   modified: LoanResult;
-  /** True when modified differs meaningfully from baseline (any overpayment,
-   *  non-monthly frequency, or tiered rate). When false, UI hides deltas. */
+  /** True when modified differs from baseline (any overpayment or tiered rate). */
   hasModifications: boolean;
   interestSaved: number;
   monthsSaved: number;
+  totalPaidSaved: number;
 }

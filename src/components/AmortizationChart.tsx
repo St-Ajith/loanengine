@@ -17,10 +17,10 @@ interface AmortizationChartProps {
 }
 
 /**
- * The signature visual. Stacked area shows cumulative principal vs
- * interest under the modified scenario; when modifications are active,
- * the baseline outstanding balance is overlaid as a dashed line so the
- * user can see what the un-modified loan would have looked like.
+ * Stacked area: cumulative principal vs interest under the active scenario.
+ * When modifications are present, the baseline outstanding balance is
+ * overlaid as a dashed line — it visualises what the un-modified loan
+ * would have looked like.
  */
 export function AmortizationChart({ comparison, locale }: AmortizationChartProps) {
   const { modified, baseline, hasModifications } = comparison;
@@ -33,18 +33,17 @@ export function AmortizationChart({ comparison, locale }: AmortizationChartProps
     );
   }
 
-  // Build a unified time series by month. Both schedules report a `month`
-  // field per period; we sample down to ~120 points across the longer
-  // of the two schedules for smooth rendering.
   const maxMonths = Math.max(baseline.actualMonths, modified.actualMonths);
   const step = Math.max(1, Math.floor(maxMonths / 120));
 
-  // Index both schedules by month for quick lookup
   const baselineByMonth = new Map<number, { balance: number }>();
   for (const row of baseline.schedule) {
     baselineByMonth.set(row.month, { balance: row.balance });
   }
-  const modifiedByMonth = new Map<number, { balance: number; principal: number; interest: number }>();
+  const modifiedByMonth = new Map<
+    number,
+    { balance: number; principal: number; interest: number }
+  >();
   for (const row of modified.schedule) {
     modifiedByMonth.set(row.month, {
       balance: row.balance,
@@ -53,7 +52,6 @@ export function AmortizationChart({ comparison, locale }: AmortizationChartProps
     });
   }
 
-  // Generate data points at every `step` months
   const data: Array<{
     month: number;
     year: number;
@@ -76,8 +74,6 @@ export function AmortizationChart({ comparison, locale }: AmortizationChartProps
       baselineBalance: lastBaseline,
     });
   }
-
-  // Ensure final point closes the series cleanly
   data.push({
     month: maxMonths,
     year: +(maxMonths / 12).toFixed(2),
@@ -128,7 +124,9 @@ export function AmortizationChart({ comparison, locale }: AmortizationChartProps
               tick={{ fill: '#6B7079' }}
               width={70}
             />
-            <Tooltip content={<CustomTooltip locale={locale} showBaseline={hasModifications} />} />
+            <Tooltip
+              content={<CustomTooltip locale={locale} showBaseline={hasModifications} />}
+            />
             <Area
               type="monotone"
               dataKey="principal"

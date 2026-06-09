@@ -1,138 +1,105 @@
-import type { Frequency, Overpayment } from '../engine/types';
-import { frequencyLabel } from '../engine/amortization';
+import type { Overpayment } from '../engine/types';
 import { type LocaleConfig, formatCurrency, formatNumber } from '../engine/locale';
 
-interface SimulatorPanelProps {
-  frequency: Frequency;
+interface ExtraPaymentsPanelProps {
   overpayments: Overpayment[];
   totalMonths: number;
   locale: LocaleConfig;
-  onFrequencyChange: (f: Frequency) => void;
-  onOverpaymentsChange: (ops: Overpayment[]) => void;
+  onChange: (ops: Overpayment[]) => void;
 }
 
-const FREQUENCIES: Frequency[] = ['monthly', 'biweekly', 'quarterly', 'semiannual', 'annual'];
-
 /**
- * Phase 2 simulator surface. Lives separate from the core InputPanel
- * because it answers a different question — "what if I changed my
- * repayment strategy?" instead of "what's the loan?". The two are
- * stacked in the main column on mobile, side-by-side on wide screens.
+ * Extra payments editor. Sits directly beneath the SummaryMetrics in
+ * App.tsx — same card, no gap — so every change here causes a visible
+ * change to the hero numbers above. That visual bond is the whole point
+ * of the panel: cause and effect, one card.
+ *
+ * Two flavours: recurring (an extra amount every month from N onward)
+ * and lump sum (a one-off principal hit at a specific month). Both
+ * shorten the loan term; the EMI stays fixed.
  */
-export function SimulatorPanel({
-  frequency,
+export function ExtraPaymentsPanel({
   overpayments,
   totalMonths,
   locale,
-  onFrequencyChange,
-  onOverpaymentsChange,
-}: SimulatorPanelProps) {
+  onChange,
+}: ExtraPaymentsPanelProps) {
   const addRecurring = () => {
-    onOverpaymentsChange([
+    onChange([
       ...overpayments,
-      { kind: 'recurring', amount: 100, startMonth: 1 },
+      { kind: 'recurring', amount: defaultRecurring(locale), startMonth: 1 },
     ]);
   };
 
   const addLump = () => {
     const month = Math.min(totalMonths, Math.max(1, Math.floor(totalMonths / 4)));
-    onOverpaymentsChange([...overpayments, { kind: 'lump', amount: 5000, month }]);
+    onChange([...overpayments, { kind: 'lump', amount: defaultLump(locale), month }]);
   };
 
   const updateAt = (index: number, op: Overpayment) => {
-    onOverpaymentsChange(overpayments.map((existing, i) => (i === index ? op : existing)));
+    onChange(overpayments.map((existing, i) => (i === index ? op : existing)));
   };
 
   const removeAt = (index: number) => {
-    onOverpaymentsChange(overpayments.filter((_, i) => i !== index));
+    onChange(overpayments.filter((_, i) => i !== index));
   };
 
   return (
-    <div className="border hairline rounded-lg p-5 sm:p-6 bg-paper">
-      <div className="flex items-baseline justify-between mb-4">
-        <div>
-          <div className="text-xs uppercase tracking-[0.16em] text-ink-muted">Simulator</div>
-          <div className="font-serif text-xl text-ink mt-0.5">What if you paid differently?</div>
+    <div className="p-6 sm:p-8">
+      <div className="flex items-baseline justify-between mb-1">
+        <div className="text-xs uppercase tracking-[0.18em] text-ink-muted">
+          What if you paid extra?
         </div>
-        {overpayments.length > 0 || frequency !== 'monthly' ? (
+        {overpayments.length > 0 && (
           <button
             type="button"
-            onClick={() => {
-              onFrequencyChange('monthly');
-              onOverpaymentsChange([]);
-            }}
+            onClick={() => onChange([])}
             className="text-xs text-ink-muted hover:text-ink underline-offset-2 hover:underline"
           >
-            Reset
+            Clear
           </button>
-        ) : null}
-      </div>
-
-      <div className="mb-5">
-        <div className="text-sm text-ink-soft font-medium mb-2">Payment frequency</div>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 border border-paper-line rounded overflow-hidden bg-paper-dim/40">
-          {FREQUENCIES.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => onFrequencyChange(f)}
-              className={`px-2 py-1.5 text-xs font-medium transition-colors ${
-                frequency === f
-                  ? 'bg-ink text-paper'
-                  : 'text-ink-soft hover:bg-paper-line/50'
-              }`}
-            >
-              {frequencyLabel(f)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-baseline justify-between mb-2">
-          <div className="text-sm text-ink-soft font-medium">Extra payments</div>
-          {overpayments.length > 0 && (
-            <div className="text-xs text-ink-faint font-mono">
-              {overpayments.length} active
-            </div>
-          )}
-        </div>
-
-        {overpayments.length === 0 && (
-          <div className="text-sm text-ink-faint italic mb-3">
-            Layer extra principal payments on top of your scheduled EMI to see how much interest you'd save.
-          </div>
         )}
+      </div>
+      <div className="font-serif text-xl text-ink mb-4">
+        Layer extra principal — watch the impact above
+      </div>
 
-        <div className="space-y-2 mb-3">
-          {overpayments.map((op, i) => (
-            <OverpaymentRow
-              key={i}
-              op={op}
-              totalMonths={totalMonths}
-              locale={locale}
-              onChange={(next) => updateAt(i, next)}
-              onRemove={() => removeAt(i)}
-            />
-          ))}
+      {overpayments.length === 0 && (
+        <div className="text-sm text-ink-soft leading-relaxed mb-4 max-w-prose">
+          Banks let you put more money toward the principal whenever you want.
+          Add a recurring contribution or a lump sum here and the loan finishes earlier —
+          your monthly payment stays the same, but you pay less interest overall.
         </div>
+      )}
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={addRecurring}
-            className="text-xs px-3 py-1.5 border border-paper-line rounded text-ink-soft hover:border-ink hover:text-ink transition-colors"
-          >
-            + Recurring
-          </button>
-          <button
-            type="button"
-            onClick={addLump}
-            className="text-xs px-3 py-1.5 border border-paper-line rounded text-ink-soft hover:border-ink hover:text-ink transition-colors"
-          >
-            + Lump sum
-          </button>
-        </div>
+      <div className="space-y-2 mb-3">
+        {overpayments.map((op, i) => (
+          <OverpaymentRow
+            key={i}
+            op={op}
+            totalMonths={totalMonths}
+            locale={locale}
+            onChange={(next) => updateAt(i, next)}
+            onRemove={() => removeAt(i)}
+          />
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={addRecurring}
+          className="text-xs font-medium px-3 py-2 border border-paper-line rounded text-ink-soft hover:border-ink hover:text-ink hover:bg-paper-dim/40 transition-colors"
+        >
+          + Add monthly extra
+        </button>
+        <button
+          type="button"
+          onClick={addLump}
+          className="text-xs font-medium px-3 py-2 border border-paper-line rounded text-ink-soft hover:border-ink hover:text-ink hover:bg-paper-dim/40 transition-colors"
+        >
+          + Add lump sum
+        </button>
       </div>
     </div>
   );
@@ -160,7 +127,7 @@ function OverpaymentRow({
             onClick={() =>
               onChange(
                 op.kind === 'recurring'
-                  ? { kind: 'recurring', amount: op.amount, startMonth: op.startMonth, endMonth: op.endMonth }
+                  ? op
                   : { kind: 'recurring', amount: op.amount, startMonth: op.month },
               )
             }
@@ -237,7 +204,7 @@ function OverpaymentRow({
       </div>
 
       {op.kind === 'recurring' && (
-        <div className="mt-2 flex items-center gap-2 text-xs">
+        <div className="mt-2 flex items-center gap-2 text-xs flex-wrap">
           <label className="flex items-center gap-1.5 text-ink-soft cursor-pointer">
             <input
               type="checkbox"
@@ -262,7 +229,10 @@ function OverpaymentRow({
               min={op.startMonth}
               max={totalMonths}
               onChange={(e) => {
-                const n = Math.max(op.startMonth, Math.min(totalMonths, Math.floor(Number(e.target.value) || op.startMonth)));
+                const n = Math.max(
+                  op.startMonth,
+                  Math.min(totalMonths, Math.floor(Number(e.target.value) || op.startMonth)),
+                );
                 onChange({ ...op, endMonth: n });
               }}
               className="bg-paper border border-paper-line rounded px-2 py-1 text-xs font-mono num w-20 focus:outline-none focus:border-ink"
@@ -276,4 +246,32 @@ function OverpaymentRow({
       )}
     </div>
   );
+}
+
+/** Sensible default starting amount for a recurring overpayment per locale. */
+function defaultRecurring(locale: LocaleConfig): number {
+  switch (locale.id) {
+    case 'IN':
+      return 5000;
+    case 'NO':
+      return 1000;
+    case 'EU':
+    case 'UK':
+    case 'US':
+      return 200;
+  }
+}
+
+/** Sensible default starting amount for a lump sum per locale. */
+function defaultLump(locale: LocaleConfig): number {
+  switch (locale.id) {
+    case 'IN':
+      return 100_000;
+    case 'NO':
+      return 50_000;
+    case 'EU':
+    case 'UK':
+    case 'US':
+      return 5_000;
+  }
 }

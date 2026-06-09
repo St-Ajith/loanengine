@@ -1,9 +1,4 @@
 // Two-way bridge between React state and the URL query string.
-//
-// The hook reads initial state from `location.search` on mount, then
-// pushes every subsequent state change back to the URL via
-// history.replaceState — replace, not push, so a tuning session doesn't
-// litter the back stack with hundreds of entries.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type AppState, decodeState, encodeState } from '../engine/url-state';
@@ -21,7 +16,6 @@ const DEFAULT_STATE: AppState = (() => {
     termYears: d.termYears,
     termMonths: 0,
     rateProfile: { kind: 'flat', apr: d.apr },
-    frequency: 'monthly',
     overpayments: [],
   };
 })();
@@ -32,7 +26,6 @@ export function useAppState(): [AppState, (updates: Partial<AppState>) => void] 
     ...decodeState(window.location.search),
   }));
 
-  // Skip the first effect run — the URL is already the source of truth on mount.
   const firstRun = useRef(true);
 
   useEffect(() => {

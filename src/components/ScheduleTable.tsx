@@ -13,15 +13,14 @@ interface YearRow {
   interest: number;
   overpayment: number;
   endingBalance: number;
-  periods: ScheduleRow[];
+  months: ScheduleRow[];
 }
 
 /**
- * Yearly rollup of the amortization schedule with click-to-expand month
- * detail. When overpayments are active, an extra column shows the
- * overpayment portion separately from the scheduled principal.
- *
- * Phase 3 will add a CSV export (FR-4.2.B) for raw data access.
+ * Yearly rollup of the amortization schedule. Click any year row to
+ * expand into the month-by-month breakdown. When overpayments are
+ * active, an "Extra" column appears so the overpayment portion is
+ * called out separately from scheduled principal.
  */
 export function ScheduleTable({ result, locale }: ScheduleTableProps) {
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -37,14 +36,14 @@ export function ScheduleTable({ result, locale }: ScheduleTableProps) {
       const year = Math.max(1, Math.ceil(row.month / 12));
       let bucket = buckets.get(year);
       if (!bucket) {
-        bucket = { year, principal: 0, interest: 0, overpayment: 0, endingBalance: 0, periods: [] };
+        bucket = { year, principal: 0, interest: 0, overpayment: 0, endingBalance: 0, months: [] };
         buckets.set(year, bucket);
       }
       bucket.principal += row.principalPaid;
       bucket.interest += row.interestPaid;
       bucket.overpayment += row.overpayment;
       bucket.endingBalance = row.balance;
-      bucket.periods.push(row);
+      bucket.months.push(row);
     }
     return Array.from(buckets.values());
   }, [result.schedule]);
@@ -130,22 +129,22 @@ function YearRowView({
         </td>
       </tr>
       {isOpen &&
-        row.periods.map((p) => (
-          <tr key={p.period} className="bg-paper-dim/30 text-xs text-ink-soft">
-            <td className="px-4 sm:px-6 py-1.5 font-mono num pl-10">M{p.month}</td>
+        row.months.map((m) => (
+          <tr key={m.month} className="bg-paper-dim/30 text-xs text-ink-soft">
+            <td className="px-4 sm:px-6 py-1.5 font-mono num pl-10">M{m.month}</td>
             <td className="text-right px-3 py-1.5 font-mono num">
-              {formatCurrency(p.principalPaid, locale)}
+              {formatCurrency(m.principalPaid, locale)}
             </td>
             <td className="text-right px-3 py-1.5 font-mono num">
-              {formatCurrency(p.interestPaid, locale)}
+              {formatCurrency(m.interestPaid, locale)}
             </td>
             {showOverpayment && (
               <td className="text-right px-3 py-1.5 font-mono num">
-                {p.overpayment > 0 ? formatCurrency(p.overpayment, locale) : '—'}
+                {m.overpayment > 0 ? formatCurrency(m.overpayment, locale) : '—'}
               </td>
             )}
             <td className="text-right px-4 sm:px-6 py-1.5 font-mono num">
-              {formatCurrency(p.balance, locale)}
+              {formatCurrency(m.balance, locale)}
             </td>
           </tr>
         ))}
