@@ -31,12 +31,12 @@ export default function App() {
   const totalScheduledMonths = state.termYears * 12 + state.termMonths;
 
   return (
-    <div className="min-h-screen bg-paper text-ink">
+    <div className="min-h-screen bg-surface text-ink">
       <Header localeId={state.locale} onLocaleChange={handleLocaleChange} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-8 sm:mb-10 max-w-2xl">
-          <h1 className="font-serif text-3xl sm:text-4xl text-ink leading-tight">
+          <h1 className="text-3xl sm:text-4xl text-ink leading-tight">
             Plan the loan, not the pitch.
           </h1>
           <p className="text-ink-muted mt-3 leading-relaxed">
@@ -47,16 +47,16 @@ export default function App() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8 items-start">
-          <aside className="lg:sticky lg:top-6 bg-paper border hairline rounded-lg p-5 sm:p-6">
+          <aside className="lg:sticky lg:top-6 bg-surface border hairline rounded-lg p-5 sm:p-6">
             <InputPanel state={state} onChange={updateState} locale={locale} />
           </aside>
 
           <section className="space-y-6 min-w-0">
             {/* Unified impact card — summary and extra-payments editor share
                 the same border so the cause→effect relationship is obvious. */}
-            <div className="border hairline rounded-lg bg-paper-dim/40 overflow-hidden">
+            <div className="border hairline rounded-lg bg-surface overflow-hidden">
               <SummaryMetrics comparison={comparison} locale={locale} />
-              <div className="border-t hairline bg-paper">
+              <div className="border-t hairline">
                 <ExtraPaymentsPanel
                   overpayments={state.overpayments}
                   totalMonths={totalScheduledMonths}
@@ -75,7 +75,7 @@ export default function App() {
       <footer className="border-t hairline mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 text-xs text-ink-muted flex flex-wrap items-center gap-x-6 gap-y-2">
           <span>Loan Engine v0.3</span>
-          <span className="font-mono">
+          <span className="">
             All calculations run client-side. No data leaves your browser.
           </span>
         </div>

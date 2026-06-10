@@ -4,44 +4,43 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Paper background — cool off-white, deliberately not warm cream
-        paper: {
-          DEFAULT: '#F4F3EE',
-          dim: '#ECEBE4',
-          line: '#DCDAD0',
+        // Surfaces — white is the default; subtle gray tints distinguish
+        // sections without breaking the clean feel.
+        surface: {
+          DEFAULT: '#FFFFFF',
+          page: '#FAFAFA',       // subtle warm-gray page tint
+          muted: '#F5F6F8',
+          accent: '#EEF2FF',     // soft indigo-tinted backdrop for the hero
+          line: '#E5E7EB',
+          hover: '#D1D5DB',
         },
-        // Ink — near-black with the slightest blue cast for screen comfort
+        // Ink — modern near-black with a slight cool cast
         ink: {
-          DEFAULT: '#13161A',
-          soft: '#3A3F46',
-          muted: '#6B7079',
-          faint: '#9CA0A8',
+          DEFAULT: '#0F172A',
+          soft: '#334155',
+          muted: '#64748B',
+          faint: '#94A3B8',
         },
-        // Principal — what you actually own. Deep, confident.
+        // Semantic colors
         principal: {
-          DEFAULT: '#1E3A8A',
-          soft: '#3B5BDB',
-          tint: '#DDE3F5',
+          DEFAULT: '#2563EB',    // modern electric blue, replaces the old navy
+          deep: '#1E40AF',
+          tint: '#DBEAFE',
         },
-        // Interest — what you pay to borrow. Signals cost without alarm.
         interest: {
-          DEFAULT: '#9F1239',
-          soft: '#BE185D',
-          tint: '#F5DDE5',
+          DEFAULT: '#DC2626',    // clean red, replaces the old burgundy
+          tint: '#FEE2E2',
         },
-        // Savings — only used for positive deltas, never decoration.
         savings: {
-          DEFAULT: '#15803D',
-          tint: '#D7EBDD',
+          DEFAULT: '#16A34A',
+          tint: '#DCFCE7',
         },
       },
       fontFamily: {
-        serif: ['Newsreader', 'ui-serif', 'Georgia', 'serif'],
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
       },
-      fontFeatureSettings: {
-        tabular: '"tnum", "lnum"',
+      letterSpacing: {
+        'display': '-0.02em',     // tighten big numbers for that modern feel
       },
     },
   },

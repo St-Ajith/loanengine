@@ -83,11 +83,11 @@ export function AmortizationChart({ comparison, locale }: AmortizationChartProps
   });
 
   return (
-    <div className="border hairline rounded-lg p-4 sm:p-6 bg-paper">
+    <div className="border hairline rounded-lg p-4 sm:p-6 bg-surface">
       <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2">
         <div>
           <div className="text-xs uppercase tracking-[0.16em] text-ink-muted">Amortization</div>
-          <div className="font-serif text-xl text-ink mt-0.5">
+          <div className="text-xl text-ink mt-0.5">
             Where your money goes, month by month
           </div>
         </div>
@@ -200,22 +200,22 @@ function CustomTooltip({ active, payload, locale, showBaseline }: TooltipProps) 
   const principal = payload.find((p) => p.dataKey === 'principal')?.value ?? 0;
   const interest = payload.find((p) => p.dataKey === 'interest')?.value ?? 0;
   return (
-    <div className="bg-paper border hairline rounded shadow-sm px-3 py-2 text-xs">
-      <div className="font-mono text-ink-muted mb-1.5">
+    <div className="bg-surface border hairline rounded shadow-sm px-3 py-2 text-xs">
+      <div className="text-ink-muted mb-1.5">
         Year {Math.floor(point.month / 12)}, month {point.month}
       </div>
-      <div className="flex items-center gap-3 num font-mono">
+      <div className="flex items-center gap-3 num">
         <span className="w-2 h-2 bg-principal rounded-sm" />
         <span className="text-ink-soft mr-auto">Principal</span>
         <span className="text-ink">{formatCurrency(principal, locale)}</span>
       </div>
-      <div className="flex items-center gap-3 num font-mono mt-1">
+      <div className="flex items-center gap-3 num mt-1">
         <span className="w-2 h-2 bg-interest rounded-sm" />
         <span className="text-ink-soft mr-auto">Interest</span>
         <span className="text-ink">{formatCurrency(interest, locale)}</span>
       </div>
       {showBaseline && point.baselineBalance !== null && (
-        <div className="flex items-center gap-3 num font-mono mt-1 pt-1 border-t hairline">
+        <div className="flex items-center gap-3 num mt-1 pt-1 border-t hairline">
           <span className="w-2 h-0.5 border-t border-dashed border-ink-muted" />
           <span className="text-ink-soft mr-auto">Baseline balance</span>
           <span className="text-ink">{formatCurrency(point.baselineBalance, locale)}</span>

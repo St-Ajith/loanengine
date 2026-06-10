@@ -60,7 +60,7 @@ export function ExtraPaymentsPanel({
           </button>
         )}
       </div>
-      <div className="font-serif text-xl text-ink mb-4">
+      <div className="text-xl text-ink mb-4">
         Layer extra principal — watch the impact above
       </div>
 
@@ -89,14 +89,14 @@ export function ExtraPaymentsPanel({
         <button
           type="button"
           onClick={addRecurring}
-          className="text-xs font-medium px-3 py-2 border border-paper-line rounded text-ink-soft hover:border-ink hover:text-ink hover:bg-paper-dim/40 transition-colors"
+          className="text-xs font-medium px-3 py-2 border border-surface-line rounded text-ink-soft hover:border-ink hover:text-ink hover:bg-surface-muted transition-colors"
         >
           + Add monthly extra
         </button>
         <button
           type="button"
           onClick={addLump}
-          className="text-xs font-medium px-3 py-2 border border-paper-line rounded text-ink-soft hover:border-ink hover:text-ink hover:bg-paper-dim/40 transition-colors"
+          className="text-xs font-medium px-3 py-2 border border-surface-line rounded text-ink-soft hover:border-ink hover:text-ink hover:bg-surface-muted transition-colors"
         >
           + Add lump sum
         </button>
@@ -119,9 +119,9 @@ function OverpaymentRow({
   onRemove: () => void;
 }) {
   return (
-    <div className="border border-paper-line rounded bg-paper-dim/30 p-3">
+    <div className="border border-surface-line rounded-lg bg-surface-muted p-3">
       <div className="flex items-center gap-2 mb-2">
-        <div className="flex rounded border border-paper-line overflow-hidden text-xs">
+        <div className="flex rounded border border-surface-line overflow-hidden text-xs">
           <button
             type="button"
             onClick={() =>
@@ -132,7 +132,7 @@ function OverpaymentRow({
               )
             }
             className={`px-2 py-0.5 transition-colors ${
-              op.kind === 'recurring' ? 'bg-ink text-paper' : 'text-ink-muted hover:text-ink'
+              op.kind === 'recurring' ? 'bg-ink text-surface' : 'text-ink-muted hover:text-ink'
             }`}
           >
             Recurring
@@ -147,7 +147,7 @@ function OverpaymentRow({
               )
             }
             className={`px-2 py-0.5 transition-colors ${
-              op.kind === 'lump' ? 'bg-ink text-paper' : 'text-ink-muted hover:text-ink'
+              op.kind === 'lump' ? 'bg-ink text-surface' : 'text-ink-muted hover:text-ink'
             }`}
           >
             Lump
@@ -166,7 +166,7 @@ function OverpaymentRow({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <div className="text-[10px] uppercase tracking-wider text-ink-muted mb-1">Amount</div>
-          <div className="flex items-stretch border border-paper-line rounded bg-paper">
+          <div className="flex items-stretch border border-surface-line rounded-lg bg-surface">
             <input
               type="text"
               inputMode="decimal"
@@ -176,9 +176,9 @@ function OverpaymentRow({
                 if (Number.isFinite(n)) onChange({ ...op, amount: n });
               }}
               onFocus={(e) => e.target.select()}
-              className="flex-1 bg-transparent px-2 py-1.5 text-sm font-mono num focus:outline-none min-w-0"
+              className="flex-1 bg-transparent px-2 py-1.5 text-sm num focus:outline-none min-w-0"
             />
-            <span className="self-center pr-2 text-[10px] text-ink-faint font-mono">
+            <span className="self-center pr-2 text-[10px] text-ink-faint">
               {locale.currency}
             </span>
           </div>
@@ -198,7 +198,7 @@ function OverpaymentRow({
               if (op.kind === 'lump') onChange({ ...op, month: n });
               else onChange({ ...op, startMonth: n });
             }}
-            className="w-full bg-paper border border-paper-line rounded px-2 py-1.5 text-sm font-mono num focus:outline-none focus:border-ink"
+            className="w-full bg-surface border border-surface-line rounded px-2 py-1.5 text-sm num focus:outline-none focus:border-ink"
           />
         </div>
       </div>
@@ -235,11 +235,11 @@ function OverpaymentRow({
                 );
                 onChange({ ...op, endMonth: n });
               }}
-              className="bg-paper border border-paper-line rounded px-2 py-1 text-xs font-mono num w-20 focus:outline-none focus:border-ink"
+              className="bg-surface border border-surface-line rounded px-2 py-1 text-xs num w-20 focus:outline-none focus:border-ink"
               aria-label="Last month"
             />
           )}
-          <span className="text-ink-faint ml-auto font-mono">
+          <span className="text-ink-faint ml-auto">
             ≈ {formatCurrency(op.amount * 12, locale)} / yr
           </span>
         </div>

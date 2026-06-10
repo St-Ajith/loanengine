@@ -93,12 +93,12 @@ export function InputPanel({ state, onChange, locale }: InputPanelProps) {
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
             <label className="text-sm text-ink-soft font-medium">Down payment</label>
-            <div className="flex rounded border border-paper-line overflow-hidden text-xs">
+            <div className="flex rounded border border-surface-line overflow-hidden text-xs">
               <button
                 type="button"
                 onClick={() => setDownMode('amount')}
                 className={`px-2 py-0.5 transition-colors ${
-                  downMode === 'amount' ? 'bg-ink text-paper' : 'text-ink-muted hover:text-ink'
+                  downMode === 'amount' ? 'bg-ink text-surface' : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 {locale.currency}
@@ -107,7 +107,7 @@ export function InputPanel({ state, onChange, locale }: InputPanelProps) {
                 type="button"
                 onClick={() => setDownMode('percent')}
                 className={`px-2 py-0.5 transition-colors ${
-                  downMode === 'percent' ? 'bg-ink text-paper' : 'text-ink-muted hover:text-ink'
+                  downMode === 'percent' ? 'bg-ink text-surface' : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 %
@@ -242,7 +242,7 @@ function RateProfileEditor({
       </button>
 
       {isTiered && (
-        <div className="mt-4 pl-3 border-l-2 border-l-paper-line space-y-4">
+        <div className="mt-4 pl-3 border-l-2 border-l-surface-line space-y-4">
           <DualInput
             label="Promo rate"
             value={rateProfile.promoApr}
@@ -284,12 +284,12 @@ function TermStepper({
   const inc = () => onChange(Math.min(max, value + 1));
   return (
     <div>
-      <div className="flex items-stretch border border-paper-line rounded bg-paper-dim/40 focus-within:border-ink transition-colors">
+      <div className="flex items-stretch border border-surface-line rounded-lg bg-surface-muted focus-within:border-ink transition-colors">
         <button
           type="button"
           onClick={dec}
           aria-label={`Decrease ${label.toLowerCase()}`}
-          className="w-8 text-ink-muted hover:text-ink hover:bg-paper-line/50 transition-colors"
+          className="w-8 text-ink-muted hover:text-ink hover:bg-surface-line/50 transition-colors"
         >
           −
         </button>
@@ -302,14 +302,14 @@ function TermStepper({
             const n = Number(e.target.value);
             if (Number.isFinite(n)) onChange(Math.max(0, Math.min(max, Math.floor(n))));
           }}
-          className="flex-1 bg-transparent px-2 py-2 text-center font-mono text-base num focus:outline-none w-0 min-w-0"
+          className="flex-1 bg-transparent px-2 py-2 text-center text-base num focus:outline-none w-0 min-w-0"
           aria-label={label}
         />
         <button
           type="button"
           onClick={inc}
           aria-label={`Increase ${label.toLowerCase()}`}
-          className="w-8 text-ink-muted hover:text-ink hover:bg-paper-line/50 transition-colors"
+          className="w-8 text-ink-muted hover:text-ink hover:bg-surface-line/50 transition-colors"
         >
           +
         </button>

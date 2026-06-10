@@ -4,7 +4,7 @@
 
 @layer base {
   html {
-    background-color: theme('colors.paper.DEFAULT');
+    background-color: theme('colors.surface.page');
     color: theme('colors.ink.DEFAULT');
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -12,31 +12,31 @@
 
   body {
     font-family: theme('fontFamily.sans');
+    /* Inter has tabular numerics built in via OpenType features. */
     font-feature-settings: 'cv11', 'ss01';
     min-height: 100vh;
   }
 
-  /* Tabular numerals everywhere figures show up — alignment matters in
-     a financial app, especially in the schedule table. */
+  /* Apply tabular numerals to anything tagged .num — keeps amounts
+     aligned in summary cards and the schedule table. */
   .num {
     font-variant-numeric: tabular-nums lining-nums;
   }
 
-  /* Custom focus ring — quieter than the browser default, still visible. */
+  /* Cleaner focus ring than the browser default. */
   *:focus-visible {
-    outline: 2px solid theme('colors.principal.soft');
+    outline: 2px solid theme('colors.principal.DEFAULT');
     outline-offset: 2px;
-    border-radius: 2px;
+    border-radius: 4px;
   }
 
-  /* Range input styling. Default OS sliders look out of place against
-     the paper background — this keeps them in the design system. */
+  /* Slider — quiet, modern handle on a thin track. */
   input[type='range'] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
     height: 4px;
-    background: theme('colors.paper.line');
+    background: theme('colors.surface.line');
     border-radius: 2px;
     cursor: pointer;
   }
@@ -48,8 +48,8 @@
     height: 18px;
     border-radius: 50%;
     background: theme('colors.ink.DEFAULT');
-    border: 3px solid theme('colors.paper.DEFAULT');
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    border: 3px solid #FFFFFF;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
     cursor: grab;
     transition: transform 100ms ease;
   }
@@ -64,13 +64,12 @@
     height: 18px;
     border-radius: 50%;
     background: theme('colors.ink.DEFAULT');
-    border: 3px solid theme('colors.paper.DEFAULT');
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    border: 3px solid #FFFFFF;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
     cursor: grab;
   }
 
-  /* Numeric inputs: strip the up/down arrows — they encourage one-at-a-time
-     nudging when we want users either typing or dragging the slider. */
+  /* Strip browser spinner UI from number inputs. */
   input[type='number']::-webkit-outer-spin-button,
   input[type='number']::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -91,8 +90,7 @@
 }
 
 @layer components {
-  /* A subtle rule used to separate sections without shouting. */
   .hairline {
-    border-color: theme('colors.paper.line');
+    border-color: theme('colors.surface.line');
   }
 }

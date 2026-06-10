@@ -8,14 +8,11 @@ interface SummaryMetricsProps {
 }
 
 /**
- * Hero metrics for the loan. Designed to live in the top half of the
- * unified impact card — the extra-payments editor sits directly below
- * it in App.tsx, sharing the same border so the cause→effect link is
- * unmistakable.
+ * Hero metrics. The whole section sits on a soft indigo-tinted backdrop
+ * so the monthly payment — the answer the user came here for — visibly
+ * pops away from the extra-payments controls that share the same card.
  *
- * When modifications are active, each supporting metric shows an inline
- * "saves X" indicator instead of a separate banner. Same delta info,
- * but it's attached to the number it modifies.
+ * Modifications are surfaced as inline deltas under each affected metric.
  */
 export function SummaryMetrics({ comparison, locale }: SummaryMetricsProps) {
   const { modified, baseline, hasModifications, interestSaved, monthsSaved, totalPaidSaved } =
@@ -24,29 +21,29 @@ export function SummaryMetrics({ comparison, locale }: SummaryMetricsProps) {
   const hasPromo = Math.abs(modified.paymentInitial - modified.paymentPostPromo) > 0.5;
 
   return (
-    <div className="p-6 sm:p-8">
-      <div className="text-xs uppercase tracking-[0.18em] text-ink-muted mb-2">
+    <div className="bg-surface-accent p-6 sm:p-10">
+      <div className="text-xs uppercase tracking-[0.16em] text-principal font-semibold mb-3">
         Monthly payment
-        {hasPromo && <span className="ml-1 normal-case tracking-normal">— during promo</span>}
+        {hasPromo && <span className="ml-1 normal-case tracking-normal text-ink-muted font-medium">— during promo</span>}
       </div>
-      <div className="font-serif text-5xl sm:text-6xl text-ink num leading-none">
+      <div className="text-6xl sm:text-7xl text-ink num leading-[0.95] font-semibold tracking-display">
         {formatCurrency(modified.paymentInitial, locale, 0)}
       </div>
-      <div className="text-sm text-ink-muted mt-2 font-mono">
+      <div className="text-sm text-ink-muted mt-3">
         on {formatCurrency(modified.principal, locale)} borrowed
       </div>
 
       {hasPromo && (
-        <div className="mt-3 text-sm font-mono num text-ink-soft">
+        <div className="mt-3 text-sm num text-ink-soft">
           then{' '}
-          <span className="text-ink font-medium">
+          <span className="text-ink font-semibold">
             {formatCurrency(modified.paymentPostPromo, locale)}
           </span>{' '}
           for the remaining term
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t hairline">
+      <div className="grid grid-cols-3 gap-4 mt-10 pt-8 border-t border-principal/15">
         <Stat
           label="Total interest"
           value={formatCurrency(modified.totalInterest, locale)}
@@ -108,17 +105,17 @@ function Stat({
   const toneClass = tone === 'interest' ? 'text-interest' : 'text-ink';
   return (
     <div>
-      <div className="text-xs uppercase tracking-[0.14em] text-ink-muted mb-1">{label}</div>
-      <div className={`font-mono text-base sm:text-lg num ${toneClass}`}>{value}</div>
+      <div className="text-xs uppercase tracking-[0.12em] text-ink-muted mb-1.5 font-medium">
+        {label}
+      </div>
+      <div className={`text-base sm:text-lg num font-semibold ${toneClass}`}>{value}</div>
       {sublabel && !delta && (
-        <div className="text-xs text-ink-faint mt-0.5 font-mono">{sublabel}</div>
+        <div className="text-xs text-ink-faint mt-0.5 num">{sublabel}</div>
       )}
       {delta && (
-        <div className="mt-1 space-y-0.5">
-          <div className="text-xs font-mono text-savings num">↓ {delta.text}</div>
-          <div className="text-[10px] font-mono text-ink-faint num line-through">
-            was {delta.was}
-          </div>
+        <div className="mt-1.5 space-y-0.5">
+          <div className="text-xs text-savings num font-medium">↓ {delta.text}</div>
+          <div className="text-[10px] text-ink-faint num line-through">was {delta.was}</div>
         </div>
       )}
     </div>

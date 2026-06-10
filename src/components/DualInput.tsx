@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState, useEffect } from 'react';
 
 interface DualInputProps {
   label: string;
@@ -7,25 +7,25 @@ interface DualInputProps {
   min: number;
   max: number;
   step: number;
-  /** Display formatter for the text input (e.g. currency). */
+  /** Display formatter for the text input (e.g. currency). Applied only
+   *  when the field is NOT focused — while typing, the user sees their
+   *  raw input so cursor position and partial edits aren't fought by
+   *  on-the-fly reformatting. */
   format?: (n: number) => string;
   /** Suffix shown next to the input (e.g. "%"). */
   suffix?: string;
   /** Hint shown under the label. */
   hint?: string;
-  /** Disable the slider while keeping the text input usable. */
-  sliderDisabled?: boolean;
 }
 
 /**
  * Per FR-2.1: every primary numeric input is exposed as both a precise
- * text field and a smooth slider, both bound to the same value. Editing
- * one updates the other live.
+ * text field and a smooth slider, both bound to the same value.
  *
- * The text input shows a formatted value (e.g. "$450,000") while idle.
- * On focus it switches to a raw numeric string so the user can type a
- * new value without fighting the formatter — the standard pattern for
- * money inputs.
+ * Edit behaviour: while the field is focused, the input shows the raw
+ * value the user has typed so partial edits work normally — no comma
+ * reformatting mid-keystroke, no cursor jump, no auto-select-all swallowing
+ * keystrokes. The formatted display returns on blur.
  */
 export function DualInput({
   label,
@@ -37,17 +37,25 @@ export function DualInput({
   format,
   suffix,
   hint,
-  sliderDisabled,
 }: DualInputProps) {
   const id = useId();
+  const [focused, setFocused] = useState(false);
+  // Local string state mirrors the input while editing. We seed it from
+  // `value` on focus and on external changes (e.g. slider drag while
+  // typing — rare but possible).
+  const [draft, setDraft] = useState<string>(() => String(value));
+
+  useEffect(() => {
+    if (!focused) setDraft(String(value));
+  }, [value, focused]);
+
+  const displayValue = focused ? draft : format ? format(value) : String(value);
 
   const handleTextChange = (raw: string) => {
-    // Strip everything that isn't a digit or decimal separator.
+    setDraft(raw);
+    // Permit only digits, one optional decimal point, and a leading minus.
     const cleaned = raw.replace(/[^0-9.\-]/g, '');
-    if (cleaned === '' || cleaned === '-') {
-      onChange(0);
-      return;
-    }
+    if (cleaned === '' || cleaned === '-' || cleaned === '.') return;
     const n = Number(cleaned);
     if (Number.isFinite(n)) onChange(n);
   };
@@ -63,18 +71,26 @@ export function DualInput({
         {hint && <span className="text-xs text-ink-faint">{hint}</span>}
       </div>
 
-      <div className="flex items-stretch border border-paper-line rounded bg-paper-dim/40 focus-within:border-ink transition-colors">
+      <div className="flex items-stretch border border-surface-line rounded-lg bg-surface focus-within:border-ink transition-colors">
         <input
           id={id}
           type="text"
           inputMode="decimal"
-          value={format ? format(value) : String(value)}
+          value={displayValue}
           onChange={(e) => handleTextChange(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          className="flex-1 bg-transparent px-3 py-2 font-mono text-base num text-ink focus:outline-none min-w-0"
+          onFocus={() => {
+            // Seed the draft with the raw numeric value (not the formatted
+            // string) so commas and currency symbols don't trip up editing.
+            setDraft(String(value));
+            setFocused(true);
+            // Deliberately not calling .select() here — that's what caused
+            // the "starts typing and everything disappears" bug.
+          }}
+          onBlur={() => setFocused(false)}
+          className="flex-1 bg-transparent px-3 py-2 text-base num text-ink focus:outline-none min-w-0"
         />
         {suffix && (
-          <span className="self-center pr-3 text-ink-faint text-sm font-mono">{suffix}</span>
+          <span className="self-center pr-3 text-ink-faint text-sm">{suffix}</span>
         )}
       </div>
 
@@ -85,7 +101,6 @@ export function DualInput({
         step={step}
         value={clampedSliderValue}
         onChange={(e) => onChange(Number(e.target.value))}
-        disabled={sliderDisabled}
         aria-label={`${label} slider`}
         className="mt-3"
       />

@@ -53,15 +53,15 @@ export function ScheduleTable({ result, locale }: ScheduleTableProps) {
   }
 
   return (
-    <div className="border hairline rounded-lg bg-paper overflow-hidden">
+    <div className="border hairline rounded-lg bg-surface overflow-hidden">
       <div className="px-4 sm:px-6 py-4 border-b hairline">
         <div className="text-xs uppercase tracking-[0.16em] text-ink-muted">Schedule</div>
-        <div className="font-serif text-xl text-ink mt-0.5">Year-by-year breakdown</div>
+        <div className="text-xl text-ink mt-0.5">Year-by-year breakdown</div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-paper-dim/50 text-ink-muted">
+          <thead className="bg-surface-muted text-ink-muted">
             <tr className="text-xs uppercase tracking-[0.12em]">
               <th className="text-left font-medium px-4 sm:px-6 py-2.5 w-16">Yr</th>
               <th className="text-right font-medium px-3 py-2.5">Principal</th>
@@ -106,44 +106,44 @@ function YearRowView({
   return (
     <>
       <tr
-        className="border-t hairline cursor-pointer hover:bg-paper-dim/40 transition-colors"
+        className="border-t hairline cursor-pointer hover:bg-surface-muted transition-colors"
         onClick={onToggle}
       >
-        <td className="px-4 sm:px-6 py-2.5 font-mono num text-ink">
+        <td className="px-4 sm:px-6 py-2.5 num text-ink">
           <span className="inline-block w-3 text-ink-faint mr-1">{isOpen ? '−' : '+'}</span>
           {row.year}
         </td>
-        <td className="text-right px-3 py-2.5 font-mono num text-principal">
+        <td className="text-right px-3 py-2.5 num text-principal">
           {formatCurrency(row.principal, locale)}
         </td>
-        <td className="text-right px-3 py-2.5 font-mono num text-interest">
+        <td className="text-right px-3 py-2.5 num text-interest">
           {formatCurrency(row.interest, locale)}
         </td>
         {showOverpayment && (
-          <td className="text-right px-3 py-2.5 font-mono num text-savings">
+          <td className="text-right px-3 py-2.5 num text-savings">
             {row.overpayment > 0 ? formatCurrency(row.overpayment, locale) : '—'}
           </td>
         )}
-        <td className="text-right px-4 sm:px-6 py-2.5 font-mono num text-ink">
+        <td className="text-right px-4 sm:px-6 py-2.5 num text-ink">
           {formatCurrency(row.endingBalance, locale)}
         </td>
       </tr>
       {isOpen &&
         row.months.map((m) => (
-          <tr key={m.month} className="bg-paper-dim/30 text-xs text-ink-soft">
-            <td className="px-4 sm:px-6 py-1.5 font-mono num pl-10">M{m.month}</td>
-            <td className="text-right px-3 py-1.5 font-mono num">
+          <tr key={m.month} className="bg-surface-muted text-xs text-ink-soft">
+            <td className="px-4 sm:px-6 py-1.5 num pl-10">M{m.month}</td>
+            <td className="text-right px-3 py-1.5 num">
               {formatCurrency(m.principalPaid, locale)}
             </td>
-            <td className="text-right px-3 py-1.5 font-mono num">
+            <td className="text-right px-3 py-1.5 num">
               {formatCurrency(m.interestPaid, locale)}
             </td>
             {showOverpayment && (
-              <td className="text-right px-3 py-1.5 font-mono num">
+              <td className="text-right px-3 py-1.5 num">
                 {m.overpayment > 0 ? formatCurrency(m.overpayment, locale) : '—'}
               </td>
             )}
-            <td className="text-right px-4 sm:px-6 py-1.5 font-mono num">
+            <td className="text-right px-4 sm:px-6 py-1.5 num">
               {formatCurrency(m.balance, locale)}
             </td>
           </tr>

@@ -39,7 +39,7 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'USD',
     intlLocale: 'en-US',
     defaults: {
-      home: { value: 450_000, downPct: 20, aprNew: 6.5, aprUsed: 6.7, termYears: 30 },
+      home: { value: 450_000, downPct: 20, aprNew: 6.5, aprUsed: 6.5, termYears: 30 },
       car: { value: 38_000, downPct: 15, aprNew: 6.8, aprUsed: 8.5, termYears: 5 },
     },
     caps: {
@@ -53,7 +53,7 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'EUR',
     intlLocale: 'de-DE',
     defaults: {
-      home: { value: 380_000, downPct: 20, aprNew: 3.7, aprUsed: 3.8, termYears: 25 },
+      home: { value: 380_000, downPct: 20, aprNew: 3.7, aprUsed: 3.7, termYears: 25 },
       car: { value: 32_000, downPct: 20, aprNew: 5.5, aprUsed: 7.0, termYears: 5 },
     },
     caps: {
@@ -67,7 +67,7 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'GBP',
     intlLocale: 'en-GB',
     defaults: {
-      home: { value: 320_000, downPct: 15, aprNew: 5.6, aprUsed: 5.7, termYears: 25 },
+      home: { value: 320_000, downPct: 15, aprNew: 5.6, aprUsed: 5.6, termYears: 25 },
       car: { value: 25_000, downPct: 15, aprNew: 7.5, aprUsed: 9.0, termYears: 5 },
     },
     caps: {
@@ -81,7 +81,7 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'INR',
     intlLocale: 'en-IN',
     defaults: {
-      home: { value: 8_500_000, downPct: 20, aprNew: 8.4, aprUsed: 8.6, termYears: 20 },
+      home: { value: 8_500_000, downPct: 20, aprNew: 8.4, aprUsed: 8.4, termYears: 20 },
       car: { value: 1_200_000, downPct: 20, aprNew: 9.2, aprUsed: 11.5, termYears: 5 },
     },
     caps: {
@@ -95,7 +95,7 @@ export const LOCALES: Record<LocaleId, LocaleConfig> = {
     currency: 'NOK',
     intlLocale: 'nb-NO',
     defaults: {
-      home: { value: 5_200_000, downPct: 15, aprNew: 5.3, aprUsed: 5.4, termYears: 25 },
+      home: { value: 5_200_000, downPct: 15, aprNew: 5.3, aprUsed: 5.3, termYears: 25 },
       car: { value: 480_000, downPct: 20, aprNew: 6.5, aprUsed: 8.0, termYears: 5 },
     },
     caps: {
